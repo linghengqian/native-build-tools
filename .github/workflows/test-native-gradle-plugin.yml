@@ -89,7 +89,7 @@ jobs:
       - name: "🔧 Install GraalVM (dev)"
         uses: graalvm/setup-graalvm@main
         with:
-          java-version: 'dev'
+          java-version: '22.0.1'
           distribution: 'graalvm'
           github-token: ${{ inputs.github-token }}
           set-java-home: 'false'
