@@ -60,6 +60,7 @@ class MetadataCopyMojoTest extends Specification {
     def "reuses existing metadata when output directory is shared across modules"() {
         given:
         File buildDir = new File(tempDir, "module/target")
+        File mainOutput = new File(buildDir, "native/agent-output/main")
         File testOutput = new File(buildDir, "native/agent-output/test")
         testOutput.mkdirs()
         new File(testOutput, "reachability-metadata.json").text = "{}"
@@ -79,7 +80,7 @@ class MetadataCopyMojoTest extends Specification {
 
         def agentConfig = new AgentConfiguration()
         agentConfig.enabled = true
-        agentConfig.@metadataCopy = metadataCopyConfig
+        agentConfig.setMetadataCopyConfiguration(metadataCopyConfig)
 
         def project = new MavenProject()
         def build = new Build()
@@ -90,9 +91,9 @@ class MetadataCopyMojoTest extends Specification {
         project.artifactId = "demo"
 
         def mojo = new TestMetadataCopyMojo(executable)
-        mojo.@agentConfiguration = agentConfig
-        mojo.@project = project
-        mojo.@logger = new ConsoleLogger(Logger.LEVEL_INFO, "test")
+        mojo.setAgentConfiguration(agentConfig)
+        mojo.setProject(project)
+        mojo.setLogger(new ConsoleLogger(Logger.LEVEL_INFO, "test"))
 
         when:
         mojo.execute()
@@ -100,6 +101,7 @@ class MetadataCopyMojoTest extends Specification {
         then:
         logFile.text.contains("--input-dir=${testOutput.absolutePath}")
         logFile.text.contains("--input-dir=${destinationDir.absolutePath}")
+        !logFile.text.contains(mainOutput.absolutePath)
     }
 
     private static final class TestMetadataCopyMojo extends MetadataCopyMojo {

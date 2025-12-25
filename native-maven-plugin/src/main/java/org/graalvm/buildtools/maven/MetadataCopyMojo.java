@@ -129,28 +129,27 @@ public class MetadataCopyMojo extends AbstractMergeAgentFilesMojo {
 
         // In case user wants to merge agent-output files with some existing files in output directory, we need to check if there are some
         // files in outputDirectory that can be merged. If the output directory is empty, we ignore user instruction to merge files.
-            boolean destinationHasContent = !isDirectoryEmpty(destinationDir);
-            boolean mergeWithExistingOutput = config.shouldMerge() || destinationHasContent;
-            if (mergeWithExistingOutput && destinationHasContent) {
-                //  If output directory contains some files, we need to check if the directory contains all necessary files for merge
-                if (!dirContainsFilesForMerge(destinationDir)) {
-                    List<String> destinationDirContent = Arrays.stream(Objects.requireNonNull(new File(destinationDir).listFiles())).map(File::getName).collect(Collectors.toList());
-                    List<String> missingFiles = getListDiff(FILES_REQUIRED_FOR_MERGE, destinationDirContent);
-                    if (config.shouldMerge()) {
-                        throw new MojoExecutionException("There are missing files for merge in output directory. If you want to merge agent files with " +
-                                "existing files in output directory, please make sure that output directory contains all of the following files: " +
-                                "reflect-config.json, jni-config.json, proxy-config.json, resource-config.json, reachability-metadata.json. Currently the output directory is " +
-                                "missing: " + missingFiles);
-                    } else {
-                        logger.warn("Output directory " + destinationDir + " already contains files that cannot be merged automatically: " + missingFiles);
-                    }
+        boolean destinationHasContent = !isDirectoryEmpty(destinationDir);
+        if (destinationHasContent) {
+            //  If output directory contains some files, we need to check if the directory contains all necessary files for merge
+            if (!dirContainsFilesForMerge(destinationDir)) {
+                List<String> destinationDirContent = Arrays.stream(Objects.requireNonNull(new File(destinationDir).listFiles())).map(File::getName).collect(Collectors.toList());
+                List<String> missingFiles = getListDiff(FILES_REQUIRED_FOR_MERGE, destinationDirContent);
+                if (config.shouldMerge()) {
+                    throw new MojoExecutionException("There are missing files for merge in output directory. If you want to merge agent files with " +
+                            "existing files in output directory, please make sure that output directory contains reachability-metadata.json " +
+                            "or the legacy set of configuration files (reflect-config.json, jni-config.json, proxy-config.json, resource-config.json). " +
+                            "Currently the output directory is missing: " + missingFiles);
                 } else {
-                    if (!config.shouldMerge()) {
-                        logger.info("Destination directory already contains metadata. Merging existing content with new agent output.");
-                    }
-                    sourceDirectories.add(destinationDir);
+                    logger.warn("Output directory " + destinationDir + " already contains files that cannot be merged automatically: " + missingFiles + ". Existing files will remain unchanged.");
                 }
+            } else {
+                if (!config.shouldMerge()) {
+                    logger.info("Destination directory already contains metadata. Merging existing content with new agent output.");
+                }
+                sourceDirectories.add(destinationDir);
             }
+        }
 
         if (!checkIfSourcesExists(sourceDirectories)) {
             return;
@@ -226,6 +225,27 @@ public class MetadataCopyMojo extends AbstractMergeAgentFilesMojo {
         List<String> diff = new ArrayList<>(list1);
         diff.removeAll(list2);
         return diff;
+    }
+
+    /**
+     * Visible for testing.
+     */
+    void setAgentConfiguration(AgentConfiguration agentConfiguration) {
+        this.agentConfiguration = agentConfiguration;
+    }
+
+    /**
+     * Visible for testing.
+     */
+    void setProject(MavenProject project) {
+        this.project = project;
+    }
+
+    /**
+     * Visible for testing.
+     */
+    void setLogger(Logger logger) {
+        this.logger = logger;
     }
 
     private boolean agentIsEnabledFromCmd() {

@@ -76,6 +76,10 @@ public class AgentConfiguration extends org.graalvm.buildtools.agent.AgentConfig
         }
     }
 
+    public void setMetadataCopyConfiguration(MetadataCopyConfiguration metadataCopy) {
+        this.metadataCopy = metadataCopy;
+    }
+
     @Override
     public boolean isEnabled() {
         return enabled;
