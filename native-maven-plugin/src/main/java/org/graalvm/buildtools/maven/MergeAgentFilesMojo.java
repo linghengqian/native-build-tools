@@ -52,10 +52,11 @@ import org.graalvm.buildtools.maven.config.agent.AgentConfiguration;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.Collections;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -73,15 +74,14 @@ public class MergeAgentFilesMojo extends AbstractMergeAgentFilesMojo {
     @Parameter(alias = "agent")
     private AgentConfiguration agentConfiguration;
 
-    private static int numberOfExecutions = 0;
+    private static final Set<String> processedProjects = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     private static final List<String> DEFAULT_DIRS = Arrays.asList("main", "test");
 
     @Override
     public void execute() throws MojoExecutionException {
-        // we need this mojo to be executed only once
-        numberOfExecutions++;
-        if (numberOfExecutions > 1) {
+        String projectId = project.getId();
+        if (!processedProjects.add(projectId)) {
             return;
         }
 
