@@ -409,11 +409,13 @@ public abstract class AbstractNativeImageMojo extends AbstractNativeMojo {
                 Path dependencyPath = processSupportedArtifacts(dependency);
                 if (dependencyPath != null) {
                     imageClasspath.add(dependencyPath);
-                    maybeAddDependencyMetadata(dependency, file -> {
-                        buildArgs.add("--exclude-config");
-                        buildArgs.add(Pattern.quote(dependency.getFile().getAbsolutePath()));
-                        buildArgs.add("^/META-INF/native-image/");
-                    });
+                    if (dependency.getFile() != null) {
+                        maybeAddDependencyMetadata(dependency, file -> {
+                            buildArgs.add("--exclude-config");
+                            buildArgs.add(Pattern.quote(dependency.getFile().getAbsolutePath()));
+                            buildArgs.add("^/META-INF/native-image/");
+                        });
+                    }
                 }
             }
         }
