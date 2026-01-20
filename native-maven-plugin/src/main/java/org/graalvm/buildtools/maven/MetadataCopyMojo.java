@@ -47,6 +47,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 import org.graalvm.buildtools.agent.StandardAgentMode;
+import org.codehaus.plexus.logging.Logger;
 import org.graalvm.buildtools.maven.config.AbstractMergeAgentFilesMojo;
 import org.graalvm.buildtools.maven.config.agent.AgentConfiguration;
 import org.graalvm.buildtools.maven.config.agent.MetadataCopyConfiguration;
@@ -129,19 +130,26 @@ public class MetadataCopyMojo extends AbstractMergeAgentFilesMojo {
 
         // In case user wants to merge agent-output files with some existing files in output directory, we need to check if there are some
         // files in outputDirectory that can be merged. If the output directory is empty, we ignore user instruction to merge files.
-        if (config.shouldMerge() && !isDirectoryEmpty(destinationDir)) {
+        boolean destinationHasContent = !isDirectoryEmpty(destinationDir);
+        if (destinationHasContent) {
             //  If output directory contains some files, we need to check if the directory contains all necessary files for merge
             if (!dirContainsFilesForMerge(destinationDir)) {
                 List<String> destinationDirContent = Arrays.stream(Objects.requireNonNull(new File(destinationDir).listFiles())).map(File::getName).collect(Collectors.toList());
                 List<String> missingFiles = getListDiff(FILES_REQUIRED_FOR_MERGE, destinationDirContent);
-
-                throw new MojoExecutionException("There are missing files for merge in output directory. If you want to merge agent files with " +
-                        "existing files in output directory, please make sure that output directory contains all of the following files: " +
-                        "reflect-config.json, jni-config.json, proxy-config.json, resource-config.json, reachability-metadata.json. Currently the output directory is " +
-                        "missing: " + missingFiles);
+                if (config.shouldMerge()) {
+                    throw new MojoExecutionException("There are missing files for merge in output directory. If you want to merge agent files with " +
+                            "existing files in output directory, please make sure that output directory contains reachability-metadata.json " +
+                            "or the legacy set of configuration files (reflect-config.json, jni-config.json, proxy-config.json, resource-config.json). " +
+                            "Currently the output directory is missing: " + missingFiles);
+                } else {
+                    logger.warn("Output directory " + destinationDir + " already contains files that cannot be merged automatically: " + missingFiles + ". Existing files will remain unchanged.");
+                }
+            } else {
+                if (!config.shouldMerge()) {
+                    logger.info("Destination directory already contains metadata. Merging existing content with new agent output.");
+                }
+                sourceDirectories.add(destinationDir);
             }
-
-            sourceDirectories.add(destinationDir);
         }
 
         if (!checkIfSourcesExists(sourceDirectories)) {
@@ -218,6 +226,27 @@ public class MetadataCopyMojo extends AbstractMergeAgentFilesMojo {
         List<String> diff = new ArrayList<>(list1);
         diff.removeAll(list2);
         return diff;
+    }
+
+    /**
+     * Visible for testing.
+     */
+    void setAgentConfiguration(AgentConfiguration agentConfiguration) {
+        this.agentConfiguration = agentConfiguration;
+    }
+
+    /**
+     * Visible for testing.
+     */
+    void setProject(MavenProject project) {
+        this.project = project;
+    }
+
+    /**
+     * Visible for testing.
+     */
+    void setLogger(Logger logger) {
+        this.logger = logger;
     }
 
     private boolean agentIsEnabledFromCmd() {
