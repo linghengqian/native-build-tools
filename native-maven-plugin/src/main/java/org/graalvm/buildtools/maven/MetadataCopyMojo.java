@@ -47,6 +47,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 import org.graalvm.buildtools.agent.StandardAgentMode;
+import org.codehaus.plexus.logging.Logger;
 import org.graalvm.buildtools.maven.config.AbstractMergeAgentFilesMojo;
 import org.graalvm.buildtools.maven.config.agent.AgentConfiguration;
 import org.graalvm.buildtools.maven.config.agent.MetadataCopyConfiguration;
